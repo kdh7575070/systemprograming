@@ -7,6 +7,6 @@ Inspired by Chrome Dinosaur game (using Ncurses) \
 To compile and run :
 
     gcc main.c -lcurses -o main.out
-    /main.out'''
+    /main.out
 
 (Make sure you have Ncurses library installed)
