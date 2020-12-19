@@ -16,9 +16,41 @@ struct user
 };
 struct user firstUser;
 
+typedef struct
+{
+	int x;
+	int y;
+	int type;
+} obstacle;
+obstacle Queue[MAX_QUEUE_SIZE];
+obstacle *queue;
+obstacle cactus;
+
 /* functions */
 void startMenu();
 void startEngine();
+
+
+
+
+void show();
+
+
+
+
+
+
+
+
+
+
+void qinitialize();
+int isEmpty();
+int isFull();
+void addq(obstacle item);
+void deleteq();
+void updateObstacle();
+void showObstacle();
 
 /* global variable */
 int isObstacle;
@@ -113,4 +145,210 @@ void startEngine()
     /* When code reaches here, means that user is loss */
     endGame(score, diY, diX);
     attroff(COLOR_PAIR(1));
+}
+
+
+void show()
+/* displayed on the screen */
+{
+	/* Show day or night */
+	if (((score / 100)) % 2)
+	/* night */
+	{
+		clear();
+		attron(COLOR_PAIR(3));
+		moon(10, (maxX / 2) - 10);
+	}
+	else
+	/* day */
+	{
+		attron(COLOR_PAIR(1));
+		sun(10, (maxX / 2) - 10);
+	}
+
+	/* increase score */
+	score++;
+	
+	/* show informations */
+	mvprintw(1, 6, "%s %s", firstUser.name, firstUser.lastName);
+	mvprintw(1, getmaxx(stdscr) - 9, "%d : %d", highScore, score);
+
+	/* show the border as a solid line */
+	box(stdscr, ACS_VLINE, ACS_HLINE);
+
+	/* for clearing screen */
+	clearDinasourUp(diY, diX);
+	
+	if (userInput == ' ' && isBottom && !isJumping)
+	/* if input is equal to ' ', character is on ground and character is not jumping then character will jump */
+	{
+		isJumping = true;	 /* character will jump */
+		isBottom = false;	 /* character will not touch the ground */
+		beforeInput_jump = true;/* character will jump */
+	}
+
+	if (isJumping)
+	/* jump */
+	{
+		diY -= 7;
+	}
+	else if (beforeInput_jump)
+	/* if character is above ground and character will fall */
+	{
+		beforeInput_jump = false;
+	}
+	else
+	/* fall */
+	{
+		diY += 7;
+		clearDinasourUp(diY, diX);
+	}
+
+
+	if (diY >= y)
+	/* if character is below ground */
+	{
+		diY = y;	  /* character is on the ground */
+		isBottom = true;
+	}
+
+
+	if (isJumping)
+	/* if character is jumping */
+	{
+		clearDinasourDown(diY, diX); /* erase old position(bottom)  */
+		isJumping = false;   	      /* character will fall         */
+	}
+	else{
+		clearDinasourUp(diY, diX);   /* erase old position(jumping) */
+	}
+	
+	
+	if (diY <= 7)
+	/* if character is above ground */
+	{
+		isJumping = false; /* character will fall */
+	}
+	
+	/* add obstacle in queue */
+	isObstacle = rand() % 10; 		   /* create obstacle or not 		     */
+	if (isObstacle == 1)      		   /* probability of creating obstacle: 10% */
+	{					
+		cactusNum = rand() % 3;	   /* decide the type of cactus             */
+		cactus.x = getmaxx(stdscr) - 20;  /* initial x-axis position of cactus     */
+		cactus.y = y;		           /* initial y-axis position of cactus     */
+		cactus.type = cactusNum;	   /* type of cactus                        */
+		addq(cactus);
+	}
+	
+	/* first: closest obstacle from dinosaur */
+	obstacle first = queue[(front + 1) % MAX_QUEUE_SIZE]; 
+	/* show obstacle */
+	showObstacle();
+	/* collision check */
+	gameStatus = checkGame(first.y, first.x, diY, diX);
+	/* show ground */
+	mvhline(y + 1, 1, '-', getmaxx(stdscr) - 3);
+	/* move obstacle left */
+	updateObstacle();
+	/* show character you chose*/
+	switch (getMode)
+	{
+	case 'b':
+		showPeople(diY, diX);
+		break;
+	case 'c':
+		showAlphaca(diY, diX);
+		break;
+	case 'd':
+		showAmongus(diY, diX);
+		break;
+	default:
+		showDinasour(diY, diX);
+		break;
+	}
+	refresh();
+	
+	usleep(delayTime);
+	delayTime = computeTime(delayTime);
+	userInput = 'q';
+}
+
+/* generate obstacle randomly using circular queue */
+void qinitialize()
+{
+	front = rear = 0;
+}
+int isEmpty()
+{
+	return (front == rear);
+}
+int isFull()
+{
+	return ((rear + 1) % MAX_QUEUE_SIZE == front);
+}
+void addq(obstacle item)
+{
+	if (isFull())
+		return;
+	rear++;
+	rear = rear % MAX_QUEUE_SIZE;
+	queue[rear] = item;
+}
+void deleteq()
+{
+	front = (front + 1) % MAX_QUEUE_SIZE;
+}
+void updateObstacle()
+/* erase all obstacles in screen 
+ * move all obstacles left
+ * if obstacle is out of screen, get rid of it from queue
+ */
+{
+	int i = front;
+	for (; i != rear;)
+	{
+		i = (i + 1) % MAX_QUEUE_SIZE;
+		clearCactus1(queue[i].y, queue[i].x);
+		queue[i].x -= 7;
+		if (queue[i].x < 0)
+		{
+			clearCactus1(queue[i].y, queue[i].x);
+			deleteq();
+		}
+	}
+}
+void showObstacle()
+/* show all obstacles in queue 
+ * show different type of cactus depending on 'type' member of struct obstacle 
+ */
+{
+	int i = front;
+	for (; i != rear;)
+	{
+		i = (i + 1) % MAX_QUEUE_SIZE;
+		if (queue[i].type == 0)
+			cactus1(queue[i].y, queue[i].x);
+		else if (queue[i].type == 1)
+			cactus2(queue[i].y, queue[i].x);
+		else
+			cactus3(queue[i].y, queue[i].x);
+	}
+}
+
+int checkGame(int y, int x, int diY, int diX)
+/* collision check 
+ * x, y     : obstacle location
+ * diY, diX : character location
+ * if character collides with obstacle, return 0
+ */
+{
+	if (diY == y)
+	{
+		if (abs((diX + 14) - x) <= 3)
+		{
+			return 0;
+		}
+	}
+	return 1;
 }
