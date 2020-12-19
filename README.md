@@ -9,5 +9,10 @@ To compile and run :
     gcc main.c -lcurses -o main.out
     /main.out
 
-(Make sure you have Ncurses library installed) \
+
+Make sure you have Ncurses library installed :
+
+    sudo apt-get install libncurses5-dev libncursesw5-dev
+
+
 (If you're running with MacOS, include <termios.h> instead of <termio.h>)
