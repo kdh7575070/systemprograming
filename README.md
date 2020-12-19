@@ -10,3 +10,4 @@ To compile and run :
     /main.out
 
 (Make sure you have Ncurses library installed)
+(If you're running with MacOS, include <termios.h> instead of <termio.h>)
