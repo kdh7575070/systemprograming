@@ -17,4 +17,5 @@ Make sure you have Ncurses library installed :
 
 (If you're running with MacOS, include <termios.h> instead of <termio.h>)
 
+## 데모영상은 아래를 
 [![Video Label](http://img.youtube.com/vi/uLR1RNqJ1Mw/0.jpg)](https://youtu.be/qfIq8jTesHI)
