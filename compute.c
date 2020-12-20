@@ -30,12 +30,14 @@ obstacle cactus;
 void startMenu();
 void startEngine();
 
+void endGame(int score, int diY, int diX);
 
-
-
+int showScoreBoard();
 void show();
 
-
+void on_input(int signum);
+void on_alarm(int signum);
+void enable_kbd_signals();
 
 
 
@@ -351,4 +353,123 @@ int checkGame(int y, int x, int diY, int diX)
 		}
 	}
 	return 1;
+}
+int showScoreBoard()
+/* show Scoreboard and return highScore */
+{
+	char name[100];
+	int scores;
+	int count = 0;
+	maxX = getmaxx(stdscr) / 2;
+	maxY = getmaxy(stdscr) / 2;
+
+	mvprintw(maxY - 5, maxX - 15, "          << Score Board! >>\n");
+	mvprintw(maxY - 3, maxX - 15, "%s %30s\n", "Score", "name");
+	
+	/* Read top 10 high scores from highScore.txt and print */
+	FILE *highScoreFile;
+	highScoreFile = fopen("./highScore.txt", "r");
+	fscanf(highScoreFile, "%d %s", &scores, name);
+	while (!feof(highScoreFile))
+	{
+		if (count == 0)
+			highScore = scores;
+		mvprintw(maxY + count - 1, maxX - 15, "%4d %30s", scores, name);
+		fscanf(highScoreFile, "%d %s", &scores, name);
+		count++;
+		if (count == 10)
+			break;
+	}
+	fclose(highScoreFile);
+	
+	getstr(name);
+	return highScore;
+}
+
+void on_input(int signum)
+{
+	userInput = getch(); /* grab the char */
+}
+void enable_kbd_signals()
+/* install a handler, tell kernel who to notify on input, enable signals */
+{
+	int fd_flags;
+
+	fcntl(0, F_SETOWN, getpid());		  /* set io signal to current pid   */
+	fd_flags = fcntl(0, F_GETFL);		  /* get status of the file         */
+	fcntl(0, F_SETFL, (fd_flags | O_ASYNC)); /* set status to tty with O_ASYNC */
+}
+void on_alarm(int signum)
+{
+	signal(SIGALRM, on_alarm); 		  /* reset, just in case	        */
+	show();		    		  /* called whenever the alarm is on */
+	userInput = 'q';
+}
+
+void endGame(int score, int diY, int diX)
+/* save highscore and decide whether to end or restart the game */
+{
+	int scores;
+	char name[100];
+	char write[110];
+	char writing[10][110];
+	int iswrite = 0;
+	
+	nodelay(stdscr, FALSE);
+	init_pair(2, COLOR_RED, COLOR_BLACK);
+	
+	/* rank by comparing score with scores that are saved in highScore.txt
+	 * store 10 highscore informations in 'writing' array according to ranking
+	 */
+	FILE *highScoreFile;
+	highScoreFile = fopen("./highScore.txt", "r");
+	int count = 0;
+	fscanf(highScoreFile, "%d %s", &scores, name);
+	while (!feof(highScoreFile))
+	
+	{
+		if (scores < score && iswrite == 0)
+		{
+			if (!strcmp(firstUser.name, ""))
+				strcpy(firstUser.name, "PLAYER");
+			sprintf(write, "%d %s\n", score, firstUser.name);
+			strcpy(writing[count++], write);
+			iswrite = 1;
+			if (count == 10)
+				break;
+		}
+		sprintf(write, "%d %s\n", scores, name);
+		strcpy(writing[count++], write);
+		if (count == 10)
+			break;
+		fscanf(highScoreFile, "%d %s", &scores, name);
+	}
+	fclose(highScoreFile);
+	
+	highScoreFile = fopen("./highScore.txt", "w");
+	for (int i = 0; i < count; i++)
+		fprintf(highScoreFile, "%s", writing[i]);
+	fclose(highScoreFile);
+
+	/* Exit or restart game */
+	maxX = getmaxx(stdscr) / 2;
+	maxY = getmaxy(stdscr) / 2;
+	attron(COLOR_PAIR(2));
+	showLoss(maxY, maxX);
+	char keyToExit = getch();
+	if (keyToExit == 'r' || keyToExit == 'R')
+	{
+		attroff(COLOR_PAIR(2));
+		startEngine();
+	}
+	else if (keyToExit == 'q' || keyToExit == 'Q')
+	{
+		clear();
+		showScoreBoard();
+		return;
+	}
+	else
+	{
+		endGame(score, diY, diX);
+	}
 }
